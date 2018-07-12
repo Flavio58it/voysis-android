@@ -112,24 +112,10 @@ public class MainActivityJava extends AppCompatActivity implements Callback {
 
     private void setupButtons() {
         Button start = findViewById(R.id.start);
-        Button stop = findViewById(R.id.stop);
-        Button cancel = findViewById(R.id.cancel);
         start.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
                 checkPermissionAndStartQuery();
-            }
-        });
-        stop.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                service.finish();
-            }
-        });
-        cancel.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                service.cancel();
             }
         });
     }

@@ -18,12 +18,11 @@ import com.voysis.events.VoysisException
 import com.voysis.model.request.FeedbackData
 import com.voysis.model.response.StreamResponse
 import com.voysis.sevice.DataConfig
-import kotlinx.android.synthetic.main.activity_main.cancel
 import kotlinx.android.synthetic.main.activity_main.eventText
 import kotlinx.android.synthetic.main.activity_main.responseText
 import kotlinx.android.synthetic.main.activity_main.start
-import kotlinx.android.synthetic.main.activity_main.stop
 import java.net.URL
+import java.nio.ByteBuffer
 import java.util.concurrent.Executors
 
 
@@ -52,10 +51,10 @@ class MainActivity : AppCompatActivity(), Callback {
                     .setTitle("Alert")
                     .setCancelable(false)
                     .create()
-            alertDialog.setButton(AlertDialog.BUTTON_NEUTRAL, "OK", { dialog, _ ->
+            alertDialog.setButton(AlertDialog.BUTTON_NEUTRAL, "OK") { dialog, _ ->
                 dialog.dismiss()
                 this@MainActivity.acceptAudioPermission()
-            })
+            }
             alertDialog.show()
         } else {
             init()
@@ -70,14 +69,13 @@ class MainActivity : AppCompatActivity(), Callback {
     private fun init() {
         service = ServiceProvider().make(applicationContext, config)
         start.setOnClickListener { onStartClicked() }
-        stop.setOnClickListener { service.finish() }
-        cancel.setOnClickListener { service.cancel() }
     }
 
     private fun onStartClicked() {
         if (service.state == State.IDLE) {
-            executor.submit({ startAudioQuery() })
+            executor.submit { startAudioQuery() }
         } else {
+            service.finish()
             Toast.makeText(this, "query in progress ", LENGTH_SHORT).show()
         }
     }
@@ -89,7 +87,8 @@ class MainActivity : AppCompatActivity(), Callback {
     override fun success(response: StreamResponse) {
         feedbackData.durations.complete = System.currentTimeMillis() - startTime!!
         val queryId = response.id
-        executor.submit({ sendFeedback(queryId) })
+        start.success(response)
+        executor.submit { sendFeedback(queryId) }
         context = response.context
         runOnUiThread {
             setText("Query Complete")
@@ -99,11 +98,13 @@ class MainActivity : AppCompatActivity(), Callback {
 
     override fun failure(error: VoysisException) {
         setText(error.message.toString())
+        start.failure(error)
     }
 
     override fun recordingStarted() {
         startTime = System.currentTimeMillis()
         setText("Recording Started")
+        start.recordingStarted()
     }
 
     override fun recordingFinished(reason: FinishedReason) {
@@ -113,6 +114,11 @@ class MainActivity : AppCompatActivity(), Callback {
         } else if (reason == FinishedReason.MANUAL_STOP) {
             setText("Recording Finished")
         }
+        start.recordingFinished(reason)
+    }
+
+    override fun audioData(buffer: ByteBuffer) {
+        start.audioData(buffer)
     }
 
     private fun sendFeedback(queryId: String) {
