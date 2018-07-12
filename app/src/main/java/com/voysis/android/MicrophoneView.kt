@@ -3,6 +3,7 @@ package com.voysis.android
 import android.content.Context
 import android.graphics.Canvas
 import android.util.AttributeSet
+import android.util.Log
 import android.view.View
 import com.voysis.events.Callback
 import com.voysis.events.FinishedReason
@@ -27,6 +28,9 @@ class MicrophoneView(context: Context?, attrs: AttributeSet?) : View(context, at
     override fun onDraw(canvas: Canvas) {
         dynamicAnimationManager?.updateLines(level.toFloat())
         dynamicAnimationManager?.draw(canvas, viewState)
+        if (viewState == ViewState.PROCESSING) {
+            invalidate()
+        }
     }
 
     override fun success(response: StreamResponse) {
@@ -45,8 +49,8 @@ class MicrophoneView(context: Context?, attrs: AttributeSet?) : View(context, at
             state = AnimationState.ANIMATING
         }
 
-        if (temp > 20 && temp != level) {
-            level = temp
+        if (temp > 5 && temp != level) {
+            level = (temp * 0.5).toInt()
             invalidate()
         }
     }
@@ -57,6 +61,7 @@ class MicrophoneView(context: Context?, attrs: AttributeSet?) : View(context, at
 
     override fun recordingFinished(reason: FinishedReason) {
         viewState = ViewState.PROCESSING
+        invalidate()
     }
 
     private fun reset() {
